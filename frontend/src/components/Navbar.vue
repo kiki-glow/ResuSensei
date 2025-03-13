@@ -46,7 +46,7 @@
       </li>
     </ul>
 
-    <button class="rounded-full bg-sky-300/50 text-white hover:text-white transition duration-300 px-4 py-2">
+    <button class="sm:rounded-2xl md:rounded-full bg-sky-300/50 text-white hover:text-white transition duration-300 px-4 py-2">
       <RouterLink to="/login" class="text-gray-100 hover:text-white transition duration-300">
         Try Now
       </RouterLink>
