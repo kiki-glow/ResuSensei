@@ -1,5 +1,5 @@
 <template>
-  <footer class="bg-sky-200/50 text-gray-700 py-8 mt-16 border-t border-gray-700">
+  <footer id="contact" class="bg-sky-200/50 text-gray-700 py-8 mt-16 border-t border-gray-700">
     <div class="container mx-auto px-6 lg:px-20 flex sm:flex-col md:flex-row justify-between md:gap-50 items-start md:items-start">
       
       <!-- Left Section: About and Social Media -->
@@ -26,14 +26,12 @@
         </div>
       </div>
 
-      <!-- Middle Section: Quick Links -->
+      <!-- Middle Section: Contact -->
       <div class="flex-1 md:pl-20">
-        <h4 class="text-lg font-bold text-gray-900">Quick Links</h4>
+        <h4 class="text-lg font-bold text-gray-900">Contact Us</h4>
         <ul class="mt-2 space-y-2">
-          <li><a href="#" class="text-gray-600 hover:text-gray-900 transition">Home</a></li>
-          <li><a href="#" class="text-gray-600 hover:text-gray-900 transition">Features</a></li>
-          <li><a href="#" class="text-gray-600 hover:text-gray-900 transition">About</a></li>
-          <li><a href="#" class="text-gray-600 hover:text-gray-900 transition">Contact</a></li>
+          <li><a class="text-gray-600 hover:text-gray-900 transition">kiki1703m@gmail.com</a></li>
+          <li><a href="#" class="text-gray-600 hover:text-gray-900 transition">info@resusensei.com</a></li>
         </ul>
       </div>
 
