@@ -113,7 +113,7 @@
     formData.append("file", file);
   
     try {
-      const uploadResponse = await axios.post("http://127.0.0.1:5000/upload", formData);
+      const uploadResponse = await axios.post("https://resusensei-3.onrender.com/upload", formData);
       analysis.value = uploadResponse.data;
     } catch (error) {
       console.error("Error uploading resume:", error);
