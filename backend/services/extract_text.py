@@ -5,16 +5,28 @@ import pypandoc
 def extract_text_from_pdf(pdf_path):
     """Extract text from a PDF file."""
     with pdfplumber.open(pdf_path) as pdf:
-        return " ".join([page.extract_text() for page in pdf.pages if page.extract_text()])
+        text = " ".join([page.extract_text() or "" for page in pdf.pages])
+        if not text.strip():
+            raise ValueError("No text could be extracted from the PDF. Try another file or use OCR.")
+        return text
 
 def extract_text_from_docx(docx_path):
     """Extract text from a DOCX file."""
     doc = docx.Document(docx_path)
-    return "\n".join([para.text for para in doc.paragraphs])
+    text = "\n".join([para.text for para in doc.paragraphs])
+    if not text.strip():
+        raise ValueError("No text could be extracted from the DOCX file.")
+    return text
 
 def extract_text_from_rtf(rtf_path):
     """Extract text from an RTF file using Pandoc."""
-    return pypandoc.convert_file(rtf_path, "plain")
+    try:
+        text = pypandoc.convert_file(rtf_path, "plain")
+        if not text.strip():
+            raise ValueError("No text could be extracted from the RTF file.")
+        return text
+    except OSError as e:
+        raise ValueError("Pandoc is not installed on the server. Cannot extract RTF text.") from e
 
 def extract_text(filepath):
     """Extract text based on file type."""
