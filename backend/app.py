@@ -14,7 +14,7 @@ app = Flask(__name__)
 CORS(app)  # Enable CORS to allow frontend requests
 
 # Fetch MongoDB details from .env
-MONGO_URI = os.getenv("MONGO_URI", "mongodb://localhost:27017/")
+MONGO_URI = os.getenv("MONGO_URI")
 DB_NAME = os.getenv("DB_NAME", "ResuSenseiDB")
 
 # Initialize MongoDB connection
