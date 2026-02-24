@@ -1,100 +1,85 @@
 <template>
-  <footer id="contact" class="bg-sky-200/50 text-gray-700 py-8 mt-16 border-t border-gray-700">
-    <div class="container mx-auto px-6 lg:px-20 flex sm:flex-col md:flex-row justify-between md:gap-50 items-start md:items-start">
-      
-      <!-- Left Section: About and Social Media -->
-      <div class="flex-1">
-        <h3 class="text-lg font-bold text-gray-900">ResuSensei</h3>
-        <p class="text-sm mt-2">
-          Using advanced AI to help job seekers optimize their resumes and increase their chances of landing interviews.
-        </p>
-        
-        <!-- Social Icons -->
-        <div class="flex space-x-3 mt-4">
-          <a href="https://github.com/kiki-glow" target="_blank" class="w-10 h-10 flex items-center justify-center rounded-full bg-gray-200 text-gray-700 hover:bg-gray-300 transition">
-            <font-awesome-icon :icon="['fab', 'github']" class="text-xl" />
-          </a>
-          <a href="https://www.linkedin.com/in/yourprofile/" target="_blank" class="w-10 h-10 flex items-center justify-center rounded-full bg-gray-200 text-gray-700 hover:bg-gray-300 transition">
-            <font-awesome-icon :icon="['fab', 'linkedin']" class="text-xl" />
-          </a>
-          <a href="https://www.instagram.com/yourprofile/" target="_blank" class="w-10 h-10 flex items-center justify-center rounded-full bg-gray-200 text-gray-700 hover:bg-gray-300 transition">
-            <font-awesome-icon :icon="['fab', 'instagram']" class="text-xl" />
-          </a>
-          <a href="mailto:your-email@example.com" class="w-10 h-10 flex items-center justify-center rounded-full bg-gray-200 text-gray-700 hover:bg-gray-300 transition">
-            <font-awesome-icon :icon="['fas', 'envelope']" class="text-xl" />
-          </a>
+  <footer id="contact" class="bg-white border-t border-indigo-100 pt-14 pb-8 mt-0">
+    <div class="max-w-6xl mx-auto px-6">
+
+      <!-- Top grid -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-10 mb-12">
+
+        <!-- Brand -->
+        <div class="lg:col-span-2">
+          <div class="flex items-center gap-2 mb-3">
+            <img src="../assets/logo.png" alt="ResuSensei" class="h-8" />
+          </div>
+          <p class="text-sm text-gray-500 leading-relaxed max-w-xs">
+            Using advanced AI to help job seekers optimize their resumes and
+            increase their chances of landing interviews.
+          </p>
+          <div class="flex gap-3 mt-5">
+            <a
+              v-for="social in socials"
+              :key="social.label"
+              :href="social.href"
+              target="_blank"
+              :aria-label="social.label"
+              class="w-9 h-9 flex items-center justify-center rounded-full bg-indigo-50 hover:bg-indigo-100 text-brand-indigo transition-colors duration-200"
+            >
+              <font-awesome-icon :icon="social.icon" class="text-sm" />
+            </a>
+          </div>
+        </div>
+
+        <!-- Contact -->
+        <div>
+          <h4 class="text-sm font-bold text-gray-800 mb-4">Contact Us</h4>
+          <ul class="space-y-2 text-sm text-gray-500">
+            <li class="flex items-center gap-2">
+              <font-awesome-icon :icon="['fas', 'envelope']" class="text-brand-indigo text-xs" />
+              kiki1703m@gmail.com
+            </li>
+            <li class="flex items-center gap-2">
+              <font-awesome-icon :icon="['fas', 'envelope']" class="text-brand-indigo text-xs" />
+              info@resusensei.com
+            </li>
+          </ul>
+        </div>
+
+        <!-- Resources -->
+        <div>
+          <h4 class="text-sm font-bold text-gray-800 mb-4">Resources</h4>
+          <ul class="space-y-2 text-sm">
+            <li v-for="link in resourceLinks" :key="link">
+              <a href="#" class="text-gray-500 hover:text-brand-indigo transition-colors duration-200">{{ link }}</a>
+            </li>
+          </ul>
         </div>
       </div>
 
-      <!-- Middle Section: Contact -->
-      <div class="flex-1 md:pl-20">
-        <h4 class="text-lg font-bold text-gray-900">Contact Us</h4>
-        <ul class="mt-2 space-y-2">
-          <li><a class="text-gray-600 hover:text-gray-900 transition">kiki1703m@gmail.com</a></li>
-          <li><a href="#" class="text-gray-600 hover:text-gray-900 transition">info@resusensei.com</a></li>
-        </ul>
+      <!-- Bottom bar -->
+      <div class="border-t border-gray-100 pt-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-gray-400">
+        <p>&copy; {{ new Date().getFullYear() }} ResuSensei. All rights reserved.</p>
+        <div class="flex gap-5">
+          <a v-for="link in legalLinks" :key="link" href="#" class="hover:text-brand-indigo transition-colors">{{ link }}</a>
+        </div>
       </div>
-
-      <!-- Right Section: Resources -->
-      <div class="flex-1 items-end">
-        <h4 class="text-lg font-bold text-gray-900">Resources</h4>
-        <ul class="mt-2 space-y-2">
-          <li><a href="#" class="text-gray-600 hover:text-gray-900 transition">Blog</a></li>
-          <li><a href="#" class="text-gray-600 hover:text-gray-900 transition">Career Tips</a></li>
-          <li><a href="#" class="text-gray-600 hover:text-gray-900 transition">Resume Templates</a></li>
-          <li><a href="#" class="text-gray-600 hover:text-gray-900 transition">Help Center</a></li>
-        </ul>
-      </div>
-    </div>
-
-    <!-- Divider -->
-    <hr class="my-6 border-gray-300 mx-6">
-
-    <!-- Bottom Section -->
-    <div class="container mx-auto px-6 lg:px-20 flex sm:flex-col md:flex-row items-center justify-between text-sm text-gray-500">
-      <p>&copy; 2025 ResuSensei. All rights reserved.</p>
-
-      <!-- Rotating Logo -->
-      <img src="../assets/logo.png" alt="ResuSensei Logo" class="w-20 h-10 cursor-pointer transition-transform duration-500 hover:rotate-360">
-
-      <ul class="flex space-x-4 mt-2 md:mt-0">
-        <li><a href="#" class="text-gray-600 hover:text-gray-900 transition">Privacy Policy</a></li>
-        <li><a href="#" class="text-gray-600 hover:text-gray-900 transition">Terms of Service</a></li>
-        <li><a href="#" class="text-gray-600 hover:text-gray-900 transition">Cookie Policy</a></li>
-      </ul>
     </div>
   </footer>
 </template>
 
 <script setup>
-import { library } from '@fortawesome/fontawesome-svg-core';
-import { faGithub, faLinkedin, faInstagram } from '@fortawesome/free-brands-svg-icons';
-import { faEnvelope } from '@fortawesome/free-solid-svg-icons';
-import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
+import { library } from '@fortawesome/fontawesome-svg-core'
+import { faGithub, faLinkedin, faInstagram } from '@fortawesome/free-brands-svg-icons'
+import { faEnvelope } from '@fortawesome/free-solid-svg-icons'
+import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 
-library.add(faGithub, faLinkedin, faInstagram, faEnvelope);
+library.add(faGithub, faLinkedin, faInstagram, faEnvelope)
+
+const socials = [
+  { label: 'GitHub',    href: 'https://github.com/kiki-glow',               icon: ['fab', 'github'] },
+  { label: 'LinkedIn',  href: 'https://www.linkedin.com/in/yourprofile/',    icon: ['fab', 'linkedin'] },
+  { label: 'Instagram', href: 'https://www.instagram.com/yourprofile/',      icon: ['fab', 'instagram'] },
+  { label: 'Email',     href: 'mailto:kiki1703m@gmail.com',                  icon: ['fas', 'envelope'] },
+]
+
+const resourceLinks = ['Blog', 'Career Tips', 'Resume Templates', 'Help Center']
+const legalLinks    = ['Privacy Policy', 'Terms of Service', 'Cookie Policy']
 </script>
-
-<style scoped>
-/* Logo Rotation Effect */
-img:hover {
-  transform: rotate(360deg);
-  transition: transform 0.5s ease-in-out;
-}
-
-/* Highlighted modifications */
-@media (max-width: 768px) {
-  .container {
-    flex-direction: column;
-    text-align: center;
-  }
-
-  .container > div, .container > ul {
-    margin-bottom: 1rem;
-  }
-
-  .container > ul {
-    justify-content: center;
-  }
-}
-</style>

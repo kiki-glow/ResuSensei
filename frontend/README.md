@@ -1,5 +1,52 @@
-# Vue 3 + Vite
+# ResuSensei UI
 
-This template should help get you started developing with Vue 3 in Vite. The template uses Vue 3 `<script setup>` SFCs, check out the [script setup docs](https://v3.vuejs.org/api/sfc-script-setup.html#sfc-script-setup) to learn more.
+**Vue & Vite TailwindCSS support**
 
-Learn more about IDE Support for Vue in the [Vue Docs Scaling up Guide](https://vuejs.org/guide/scaling-up/tooling.html#ide-support).
+---
+
+## Features
+- Instant ATS Score and Recommendations
+- Keyword Gap Analysis
+- 6-Dimension Breakdown
+- Role-Specific Targeting
+- Prioritized Recommendations
+
+---
+
+## Analyze Your Resume
+1. Click the Analyze My Resume button in hero section or navigate to Resume Analysis via navbar
+2. Upload your Resume/CV as a pdf, docx or rtf document
+3. Select the target role (optional)
+4. Click Analyze Resume button and wait for the analysis
+- Takes an instant!
+
+---
+
+## Tech Stack
+- Vue.js
+- TalwindCSS
+
+---
+
+## Installation
+### 1. Clone Repo
+```bash
+git clone https://github.com/kiki-glow/ResuSensei.git
+cd frontend
+
+2. Install Dependencies (npm)
+```bash
+npm install
+npm install vite/taliwindcss
+
+3. Start Server
+```bash
+npm run dev
+Visit http://127.0.0.5173
+
+```
+---
+
+# Developer and Author
+Glory Kinya
+GitHub: https://github.com/kiki-glow# ResuSensei

@@ -1,5 +1,5 @@
-import { createRouter, createWebHistory } from 'vue-router';
-import Home from './components/Home.vue'; // Assuming a Home component exists
+import { createRouter, createWebHistory } from 'vue-router'
+import Home from './components/Home.vue'
 
 const routes = [
   {
@@ -7,11 +7,11 @@ const routes = [
     name: 'Home',
     component: Home,
   },
-];
+]
 
 const router = createRouter({
   history: createWebHistory(),
   routes,
-});
+})
 
-export default router;
+export default router
