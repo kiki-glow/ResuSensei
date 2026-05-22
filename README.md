@@ -89,7 +89,11 @@ npm run dev
 ```sh
 cd backend
 pip install -r requirements.txt
-python app.py
+python main.py
+```
+### or
+```sh
+uvicorn main:app --reload
 ```
 
 ---
