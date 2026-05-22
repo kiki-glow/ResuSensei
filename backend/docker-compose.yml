@@ -1,17 +1,19 @@
 version: '3.8'
 
 services:
-  # MongoDB Database
-  mongodb:
-    image: mongo:7.0
-    container_name: resusensei_mongodb
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: resusensei_postgres
     restart: always
     ports:
-      - "27017:27017"
+      - "5432:5432"
     volumes:
-      - mongodb_data:/data/db
+      - postgresql_data:/var/lib/postgresql/data
     environment:
-      MONGO_INITDB_DATABASE: ResuSenseiDB
+      POSTGRES_DB: ResuSenseiDB
+      POSTGRES_USER: resusensei
+      POSTGRES_PASSWORD: resusensei_password
     networks:
       - resusensei_network
 
@@ -23,11 +25,11 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - MONGO_URI=mongodb://mongodb:27017/
-      - DB_NAME=ResuSenseiDB
+      - DATABASE_URL=postgresql://resusensei:resusensei_password@postgres:5432/resusensei_db
+      - DB_NAME=resusensei_db
       - ENVIRONMENT=production
     depends_on:
-      - mongodb
+      - postgres
     volumes:
       - ./uploads:/app/uploads
       - ./logs:/app/logs
@@ -47,7 +49,7 @@ services:
       - resusensei_network
 
 volumes:
-  mongodb_data:
+  postgresql_data:
   redis_data:
 
 networks:

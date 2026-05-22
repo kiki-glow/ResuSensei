@@ -339,8 +339,12 @@
 
           <!-- Keywords present -->
           <div class="bg-white rounded-2xl border border-primary-100 shadow-sm p-6">
-            <h3 class="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4">
-              ✅ Keywords Found
+            <h3 class="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4 flex items-center gap-2">
+              <font-awesome-icon
+                :icon="['fas', 'check-circle']"
+                class="text-green-500"
+              />
+              Keywords Found
               <span class="ml-2 text-xs font-normal text-gray-400">
                 ({{ analysis.role_analysis.essential_keywords.match_percentage }}% essential match)
               </span>
@@ -367,8 +371,12 @@
 
           <!-- Keywords missing -->
           <div class="bg-white rounded-2xl border border-red-100 shadow-sm p-6">
-            <h3 class="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4">
-              ⚠️ Missing Keywords
+            <h3 class="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4 flex items-center gap-2">
+              <font-awesome-icon
+                :icon="['fas', 'triangle-exclamation']"
+                class="text-yellow-500"
+              />
+              Missing Keywords
               <span class="ml-2 text-xs font-normal text-gray-400">Add these where relevant</span>
             </h3>
             <div class="flex flex-wrap gap-2">
@@ -463,6 +471,258 @@
       </div>
     </section>
 
+    <!-- ═══════════════════════════════════════════
+         NEW: JOB BOARDS SECTION (PHASE 1)
+    ════════════════════════════════════════════ -->
+    <section 
+      v-if="analysis" 
+      class="py-12 px-6 bg-gradient-to-r from-green-50 via-emerald-50 to-teal-50"
+    >
+      <div class="max-w-6xl mx-auto">
+        <div class="bg-white rounded-3xl shadow-xl p-8 md:p-12 border border-green-200">
+          
+          <!-- Header -->
+          <div class="flex items-start gap-4 mb-8">
+            <div class="w-16 h-16 rounded-full bg-gradient-to-br from-green-400 to-emerald-500 flex items-center justify-center shrink-0 shadow-lg">
+              <font-awesome-icon :icon="['fas', 'briefcase']" class="text-white text-2xl" />
+            </div>
+            <div class="flex-1">
+              <h2 class="text-3xl md:text-4xl font-bold text-gray-900 mb-2">
+                Ready to Apply?
+              </h2>
+              <p class="text-lg text-gray-600">
+                Your resume scored <span class="font-bold text-green-600">{{ analysis.overall_score }}</span>! 
+                Time to put it to work.
+              </p>
+            </div>
+          </div>
+ 
+          <!-- Job Boards Grid -->
+          <div class="mb-8">
+            <p class="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4">
+              Find {{ roleName(analysis.target_role) }} jobs on:
+            </p>
+            
+            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+              <a 
+                v-for="board in getJobBoards(analysis.target_role)" 
+                :key="board.name"
+                :href="board.url"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="group flex items-center gap-3 px-5 py-4 bg-white rounded-xl border-2 border-gray-200 hover:border-green-500 hover:shadow-lg transition-all duration-200"
+              >
+                <div class="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center shrink-0 group-hover:bg-green-50 transition">
+                  <font-awesome-icon :icon="board.icon" class="text-gray-600 group-hover:text-green-600 transition" />
+                </div>
+                <div class="flex-1 min-w-0">
+                  <span class="font-semibold text-sm text-gray-900 group-hover:text-green-600 transition block truncate">
+                    {{ board.name }}
+                  </span>
+                  <span class="text-xs text-gray-500">{{ board.subtitle }}</span>
+                </div>
+              </a>
+            </div>
+          </div>
+ 
+          <!-- Success Story CTA -->
+          <div class="bg-gradient-to-r from-purple-50 to-blue-50 rounded-2xl p-6 border border-purple-200">
+            <div class="flex items-center gap-3 mb-2">
+              <font-awesome-icon :icon="['fas', 'star']" class="text-yellow-500 text-xl" />
+              <h3 class="font-bold text-gray-900">Got an Interview or Job Offer?</h3>
+            </div>
+            <p class="text-sm text-gray-600 mb-3">
+              Help others by sharing your success story! We'll feature it on our site.
+            </p>
+            <button 
+              @click="showSuccessForm = true; scrollTo('success-form')"
+              class="px-6 py-2.5 rounded-full bg-gradient-to-r from-purple-600 to-blue-600 text-white font-semibold hover:shadow-lg transition-all duration-200 hover:-translate-y-0.5"
+            >
+              Share My Success Story
+            </button>
+          </div>
+ 
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════════
+         NEW: SUCCESS STORIES FORM (PHASE 1)
+    ════════════════════════════════════════════ -->
+    <section 
+      id="success-form"
+      v-if="showSuccessForm || successStories.length > 0"
+      class="py-16 px-6 bg-gradient-to-br from-purple-50 via-blue-50 to-indigo-50"
+    >
+      <div class="max-w-3xl mx-auto">
+        
+        <!-- Success Form -->
+        <div v-if="showSuccessForm" class="bg-white rounded-3xl shadow-2xl p-8 md:p-12 mb-12">
+          <div class="text-center mb-8">
+            <div class="w-20 h-20 rounded-full bg-gradient-to-br from-yellow-400 to-orange-500 flex items-center justify-center mx-auto mb-4 shadow-lg">
+              <font-awesome-icon :icon="['fas', 'trophy']" class="text-white text-3xl" />
+            </div>
+            <h2 class="text-3xl md:text-4xl font-bold text-gray-900 mb-3">
+              <div class="flex items-center justify-center gap-2">
+                <span>Share Your Success!</span>
+                <font-awesome-icon 
+                  :icon="['fas', 'star']"
+                  class="text-yellow-400"
+                />
+              </div>
+            </h2>
+            <p class="text-gray-600 text-lg">
+              Help others by sharing how ResuSensei helped you land your dream job
+            </p>
+          </div>
+ 
+          <form @submit.prevent="submitSuccessStory" class="space-y-5">
+            <!-- Name -->
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-2">
+                Your Name <span class="text-gray-400 font-normal">(or stay anonymous)</span>
+              </label>
+              <input 
+                v-model="successForm.name" 
+                type="text"
+                placeholder="e.g., John D. or Anonymous"
+                class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-purple-500 focus:ring-2 focus:ring-purple-100 outline-none transition"
+                required
+              />
+            </div>
+ 
+            <!-- Job Title -->
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-2">
+                Job Title You Got
+              </label>
+              <input 
+                v-model="successForm.jobTitle" 
+                type="text"
+                placeholder="e.g., Senior Frontend Developer"
+                class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-purple-500 focus:ring-2 focus:ring-purple-100 outline-none transition"
+                required
+              />
+            </div>
+ 
+            <!-- Company (optional) -->
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-2">
+                Company <span class="text-gray-400 font-normal">(optional)</span>
+              </label>
+              <input 
+                v-model="successForm.company" 
+                type="text"
+                placeholder="e.g., Google, Microsoft, etc."
+                class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-purple-500 focus:ring-2 focus:ring-purple-100 outline-none transition"
+              />
+            </div>
+ 
+            <!-- Story -->
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-2">
+                Your Success Story <span class="text-gray-400 font-normal">(optional)</span>
+              </label>
+              <textarea 
+                v-model="successForm.story"
+                placeholder="How did ResuSensei help you? What changed in your resume that made the difference?"
+                rows="5"
+                class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-purple-500 focus:ring-2 focus:ring-purple-100 outline-none transition resize-none"
+              ></textarea>
+            </div>
+ 
+            <!-- Before/After Score -->
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-2">
+                  Score Before <span class="text-gray-400 font-normal">(optional)</span>
+                </label>
+                <input 
+                  v-model.number="successForm.scoreBefore" 
+                  type="number"
+                  min="0"
+                  max="100"
+                  placeholder="e.g., 65"
+                  class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-purple-500 focus:ring-2 focus:ring-purple-100 outline-none transition"
+                />
+              </div>
+              <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-2">
+                  Score After <span class="text-gray-400 font-normal">(optional)</span>
+                </label>
+                <input 
+                  v-model.number="successForm.scoreAfter" 
+                  type="number"
+                  min="0"
+                  max="100"
+                  placeholder="e.g., 85"
+                  class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-purple-500 focus:ring-2 focus:ring-purple-100 outline-none transition"
+                />
+              </div>
+            </div>
+ 
+            <!-- Submit Button -->
+            <div class="flex gap-3 pt-4">
+              <button 
+                type="submit"
+                :disabled="submittingSuccess"
+                class="flex-1 py-4 rounded-xl bg-gradient-to-r from-purple-600 to-blue-600 text-white font-bold text-lg hover:shadow-xl transition-all duration-200 hover:-translate-y-1 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <span v-if="!submittingSuccess">Submit Success Story</span>
+                <span v-else>Submitting...</span>
+              </button>
+              <button 
+                type="button"
+                @click="showSuccessForm = false"
+                class="px-6 py-4 rounded-xl border-2 border-gray-300 text-gray-700 font-semibold hover:bg-gray-50 transition"
+              >
+                Cancel
+              </button>
+            </div>
+          </form>
+ 
+          <!-- Success Message -->
+          <div v-if="successSubmitted" class="mt-6 p-4 rounded-xl bg-green-50 border border-green-200 text-green-800 text-center">
+            <font-awesome-icon :icon="['fas', 'check-circle']" class="text-green-600 mr-2" />
+            Thank you! We'll review and feature your story soon! 
+          </div>
+        </div>
+ 
+        <!-- Display Success Stories -->
+        <div v-if="successStories.length > 0">
+          <h2 class="text-3xl font-bold text-center text-gray-900 mb-8">
+            Success Stories 
+          </h2>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div 
+              v-for="story in successStories" 
+              :key="story.id"
+              class="bg-white rounded-2xl shadow-lg p-6 border border-purple-100 hover:shadow-xl transition"
+            >
+              <div class="flex items-start gap-3 mb-4">
+                <div class="w-12 h-12 rounded-full bg-gradient-to-br from-purple-400 to-blue-500 flex items-center justify-center text-white font-bold text-lg shrink-0">
+                  {{ story.name.charAt(0).toUpperCase() }}
+                </div>
+                <div class="flex-1 min-w-0">
+                  <h3 class="font-bold text-gray-900">{{ story.name }}</h3>
+                  <p class="text-sm text-gray-600">{{ story.jobTitle }}</p>
+                  <p v-if="story.company" class="text-xs text-gray-500">at {{ story.company }}</p>
+                </div>
+                <div v-if="story.scoreAfter" class="text-right">
+                  <div class="text-2xl font-bold text-green-600">{{ story.scoreAfter }}</div>
+                  <div class="text-xs text-gray-500">Score</div>
+                </div>
+              </div>
+              <p v-if="story.story" class="text-gray-700 text-sm leading-relaxed italic">
+                "{{ story.story }}"
+              </p>
+            </div>
+          </div>
+        </div>
+ 
+      </div>
+    </section>
+    
   </div>
 </template>
 
@@ -474,13 +734,15 @@ import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import {
   faUser, faFileAlt, faCloudUploadAlt, faSearch, faSpinner,
   faTimesCircle, faExclamationCircle, faCrosshairs, faRedo,
-  faBolt, faChartBar, faKey, faCheckCircle, faLayerGroup, faStar
+  faBolt, faChartBar, faKey, faCheckCircle, faLayerGroup, faStar,
+  faBriefcase, faTrophy  
 } from '@fortawesome/free-solid-svg-icons'
 
 library.add(
   faUser, faFileAlt, faCloudUploadAlt, faSearch, faSpinner,
   faTimesCircle, faExclamationCircle, faCrosshairs, faRedo,
-  faBolt, faChartBar, faKey, faCheckCircle, faLayerGroup, faStar
+  faBolt, faChartBar, faKey, faCheckCircle, faLayerGroup, faStar,
+  faBriefcase, faTrophy  
 )
 
 // ── Constants 
@@ -513,6 +775,22 @@ const uploadProgress = ref(0)
 const apiError       = ref('')
 const analysis       = ref(null)
 
+// NEW: Success form state
+const showSuccessForm = ref(false)
+const submittingSuccess = ref(false)
+const successSubmitted = ref(false)
+const successForm = ref({
+  name: '',
+  jobTitle: '',
+  company: '',
+  story: '',
+  scoreBefore: null,
+  scoreAfter: null
+})
+
+// NEW: Success stories list
+const successStories = ref([])
+
 // ── Computed 
 const fileSize = computed(() => {
   if (!uploadedFile.value) return ''
@@ -528,6 +806,9 @@ onMounted(async () => {
   } catch {
     rolesError.value = 'Could not load roles — is the backend running?'
   }
+  
+  // NEW: Load success stories
+  await loadSuccessStories()
 })
 
 // ── Methods 
@@ -592,6 +873,113 @@ const submitAnalysis = async () => {
       'Analysis failed. Please check the backend is running.'
   } finally {
     loading.value = false
+  }
+}
+
+// NEW: Job boards configuration
+const getJobBoards = (targetRole) => {
+  const roleMap = {
+    'frontend_developer': 'Frontend Developer',
+    'backend_developer': 'Backend Developer',
+    'full_stack_developer': 'Full Stack Developer',
+    'data_analyst': 'Data Analyst',
+    'data_scientist': 'Data Scientist',
+    'devops_engineer': 'DevOps Engineer',
+    'product_manager': 'Product Manager',
+    'ui_ux_designer': 'UI/UX Designer',
+    'virtual_assistant': 'Virtual Assistant',
+    'cybersecurity_analyst': 'Cybersecurity Analyst'
+  }
+  
+  const roleNameStr = roleMap[targetRole] || 'Software Engineer'
+  const encodedRole = encodeURIComponent(roleNameStr)
+  
+  return [
+    {
+      name: 'LinkedIn',
+      subtitle: 'Professional network',
+      url: `https://www.linkedin.com/jobs/search/?keywords=${encodedRole}`,
+      icon: ['fas', 'briefcase']
+    },
+    {
+      name: 'Indeed',
+      subtitle: 'Job search engine',
+      url: `https://www.indeed.com/jobs?q=${encodedRole}`,
+      icon: ['fas', 'briefcase']
+    },
+    {
+      name: 'AngelList',
+      subtitle: 'Startup jobs',
+      url: `https://angel.co/jobs?q=${encodedRole}`,
+      icon: ['fas', 'star']
+    },
+    {
+      name: 'RemoteOK',
+      subtitle: 'Remote positions',
+      url: `https://remoteok.com/remote-${targetRole.replace('_', '-')}-jobs`,
+      icon: ['fas', 'briefcase']
+    },
+    {
+      name: 'We Work Remotely',
+      subtitle: 'Remote jobs',
+      url: `https://weworkremotely.com/remote-jobs/search?term=${encodedRole}`,
+      icon: ['fas', 'briefcase']
+    },
+    {
+      name: 'Glassdoor',
+      subtitle: 'Reviews + jobs',
+      url: `https://www.glassdoor.com/Job/jobs.htm?sc.keyword=${encodedRole}`,
+      icon: ['fas', 'star']
+    }
+  ]
+}
+
+// NEW: Submit success story
+const submitSuccessStory = async () => {
+  submittingSuccess.value = true
+  successSubmitted.value = false
+
+  try {
+    await axios.post(`${API_BASE}/api/success-story`, {
+      name: successForm.value.name,
+      job_title: successForm.value.jobTitle,
+      company: successForm.value.company || null,
+      story: successForm.value.story || null,
+      score_before: successForm.value.scoreBefore || null,
+      score_after: successForm.value.scoreAfter || null
+    })
+
+    successSubmitted.value = true
+    
+    // Reset form after 2 seconds
+    setTimeout(() => {
+      successForm.value = {
+        name: '',
+        jobTitle: '',
+        company: '',
+        story: '',
+        scoreBefore: null,
+        scoreAfter: null
+      }
+      showSuccessForm.value = false
+      successSubmitted.value = false
+    }, 2000)
+
+  } catch (error) {
+    console.error('Error submitting success story:', error)
+    alert('Failed to submit. Please try again.')
+  } finally {
+    submittingSuccess.value = false
+  }
+}
+
+// NEW: Load success stories
+const loadSuccessStories = async () => {
+  try {
+    const response = await axios.get(`${API_BASE}/api/success-stories`)
+    successStories.value = response.data.stories || []
+  } catch (error) {
+    console.error('Error loading success stories:', error)
   }
 }
 

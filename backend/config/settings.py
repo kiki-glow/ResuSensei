@@ -6,15 +6,30 @@ All environment variables and role keyword databases live here.
 import os
 from pathlib import Path
 from dotenv import load_dotenv
+from typing import Optional
+from pydantic import BaseModel
+from datetime import datetime
+from urllib.parse import quote_plus
 
 load_dotenv()
 
 # ── Base directory (two levels up from this file: config/ → backend root) ──
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# ── MongoDB ────────────────────────────────────────────────────────────────
-MONGO_URI = os.getenv("MONGO_URI", "mongodb://localhost:27017/")
-DB_NAME   = os.getenv("DB_NAME",   "ResuSenseiDB")
+# ── PostgreSQL ────────────────────────────────────────────────────────────
+DB_NAME     = os.getenv("DB_NAME",   "resusensei_db")
+DB_USER     = os.getenv("DB_USER")
+DB_PASSWORD = os.getenv("DB_PASSWORD")
+DB_HOST     = os.getenv("DB_HOST", "localhost")
+DB_PORT     = os.getenv("DB_PORT", "5432")
+
+# Build DATABASE_URL with SQLite fallback for local development
+if DB_USER and DB_PASSWORD:
+    DATABASE_URL = f"postgresql+asyncpg://{DB_USER}:{quote_plus(DB_PASSWORD)}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
+else:
+    # Fallback to SQLite for development when PostgreSQL credentials are missing
+    DATABASE_URL = f"sqlite+aiosqlite:///{BASE_DIR / 'resusensei.db'}"
+    print("[WARNING] PostgreSQL credentials not found. Using SQLite fallback for development.")
 
 # ── OpenAI (optional — for AI-enhanced recommendations) ───────────────────
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")

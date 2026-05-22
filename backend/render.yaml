@@ -5,7 +5,18 @@ services:
     buildCommand: |
       apt-get update && apt-get install -y pandoc
       pip install -r requirements.txt
-    startCommand: python app.py
+    startCommand: uvicorn main:app --host 0.0.0.0 --port 8000
     envVars:
-      - key: MONGO_URI
+      - key: DB_NAME
+        value: resusensei_db
+      - key: DB_USER
         sync: false
+      - key: DB_PASSWORD
+        sync: false
+      - key: DB_HOST
+        sync: false
+      - key: DB_PORT
+        value: "5432"
+      - key: PYTHONUNBUFFERED
+        value: "1"
+

@@ -101,7 +101,7 @@ python app.py
 
 ---
 
-## 📌 Futeure Improvements
+## 📌 Future Improvements
 - [ ] Add user authentication and dashboards 
 - [ ] Integrate advanced NLP/ML models for deeper analysis 
 - [ ] Improve scalability with containerization (Docker) and cloud deployment 

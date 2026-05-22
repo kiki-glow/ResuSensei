@@ -16,6 +16,9 @@ from app.utils.text_analysis import (
     analyze_formatting_quality,
     count_action_verbs
 )
+# NOTE: json_safe is imported in case we need to sanitize payloads.
+# (Currently used by DB persistence path.)
+from app.utils.json_safe import json_safe
 
 
 class ResumeScorer:
@@ -77,7 +80,7 @@ class ResumeScorer:
                 'achievements': round(achievement_score),
                 'formatting': round(formatting_score)
             },
-            'features': features,
+            'features': json_safe(features),
             'grade': self._get_grade(overall_score)
         }
     

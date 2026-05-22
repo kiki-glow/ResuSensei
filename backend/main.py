@@ -1,5 +1,5 @@
 """
-main.py — ResuSensei FastAPI Application
+main.py — ResuSensei FastAPI Application (PostgreSQL Version)
 Entry point. Run with: uvicorn main:app --reload
 """
 
@@ -11,14 +11,13 @@ import logging
 from datetime import datetime
 from typing import Optional, List, Dict
 
-from fastapi import FastAPI, UploadFile, File, HTTPException, Form, Request
+from fastapi import FastAPI, UploadFile, File, HTTPException, Form, Request, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from motor.motor_asyncio import AsyncIOMotorClient
 from pydantic import BaseModel
 from werkzeug.utils import secure_filename
-from bson import ObjectId
-from bson.errors import InvalidId
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select, func, desc
 
 # ── Path setup (cross-platform: Windows / Mac / Linux) ────────────────────
 BASE_DIR = Path(__file__).resolve().parent
@@ -26,13 +25,16 @@ sys.path.insert(0, str(BASE_DIR))
 
 # ── Project imports ────────────────────────────────────────────────────────
 from config.settings import (
-    MONGO_URI, DB_NAME, UPLOAD_FOLDER, MAX_FILE_SIZE,
+    UPLOAD_FOLDER, MAX_FILE_SIZE,
     ALLOWED_EXTENSIONS, API_VERSION, API_TITLE, API_DESCRIPTION,
     ROLE_KEYWORDS,
 )
 from app.services.text_extraction import TextExtractionService
 from app.services.scoring_service import ResumeScorer, RoleSpecificAnalyzer
 from app.services.recommendation_engine import RecommendationEngine, generate_quick_tips
+
+# ── Database imports (NEW - PostgreSQL) ────────────────────────────────────
+from database import init_db, close_db, get_db, Resume, SuccessStory
 
 # ── Logging ────────────────────────────────────────────────────────────────
 logging.basicConfig(
@@ -53,18 +55,15 @@ rec_engine     = RecommendationEngine()
 async def lifespan(app: FastAPI):
     # STARTUP
     try:
-        app.mongodb_client = AsyncIOMotorClient(MONGO_URI)
-        app.mongodb = app.mongodb_client[DB_NAME]
-        await app.mongodb.resumes.create_index([("analyzed_at", -1)])
-        await app.mongodb.resumes.create_index([("target_role", 1)])
-        logger.info("MongoDB connected and indexes ensured.")
+        await init_db()
+        logger.info("PostgreSQL connected and tables created.")
     except Exception as exc:
-        logger.error(f"MongoDB startup failed: {exc}")
+        logger.error(f"Database startup failed: {exc}")
         raise
     yield
     # SHUTDOWN
-    app.mongodb_client.close()
-    logger.info("MongoDB connection closed.")
+    await close_db()
+    logger.info("PostgreSQL connection closed.")
 
 
 # ── App ────────────────────────────────────────────────────────────────────
@@ -75,14 +74,18 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+# CORS
+from os import getenv
+
+frontend_origin = getenv("FRONTEND_ORIGIN", "http://localhost:5173")
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],   # tighten to your frontend URL in production
+    allow_origins=["http://localhost:5173"],
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
     allow_headers=["*"],
 )
-
 
 # ── Pydantic response models ───────────────────────────────────────────────
 class HealthResponse(BaseModel):
@@ -95,7 +98,7 @@ class RoleListResponse(BaseModel):
     total_roles: int
 
 class AnalysisResponse(BaseModel):
-    resume_id: str
+    resume_id: int
     filename: str
     target_role: Optional[str] = None
     overall_score: int
@@ -106,12 +109,13 @@ class AnalysisResponse(BaseModel):
     role_analysis: Optional[Dict] = None
     analyzed_at: datetime
 
-
-# ── Helper ─────────────────────────────────────────────────────────────────
-def _serialize(doc: dict) -> dict:
-    """Replace MongoDB _id ObjectId with a plain string resume_id."""
-    doc["resume_id"] = str(doc.pop("_id"))
-    return doc
+class SuccessStoryCreate(BaseModel):
+    name: str
+    job_title: str
+    company: Optional[str] = None
+    story: Optional[str] = None
+    score_before: Optional[int] = None
+    score_after: Optional[int] = None
 
 
 # ── Routes ─────────────────────────────────────────────────────────────────
@@ -141,6 +145,7 @@ async def get_available_roles():
 async def analyze_resume(
     file: UploadFile = File(..., description="PDF, DOCX, or RTF resume"),
     target_role: Optional[str] = Form(None, description="Role key from GET /api/roles"),
+    db: AsyncSession = Depends(get_db)
 ):
     """
     Analyze a resume. Returns:
@@ -188,127 +193,322 @@ async def analyze_resume(
     )
     quick_tips = generate_quick_tips(score_data["breakdown"], target_role)
 
-    # 7. Persist to MongoDB
+    # 7. Persist to PostgreSQL
     now = datetime.utcnow()
-    record = {
-        "filename":            filename,
-        "file_size_bytes":     len(content),
-        "resume_text_preview": resume_text[:500],
-        "target_role":         target_role,
-        "overall_score":       score_data["overall_score"],
-        "grade":               score_data["grade"],
-        "score_breakdown":     score_data["breakdown"],
-        "recommendations":     recommendations,
-        "quick_tips":          quick_tips,
-        "role_analysis":       role_analysis,
-        "analyzed_at":         now,
-        "features":            score_data["features"],
-    }
-    result    = await app.mongodb.resumes.insert_one(record)
-    resume_id = str(result.inserted_id)
+    resume_record = Resume(
+        filename=filename,
+        file_size_bytes=len(content),
+        resume_text_preview=resume_text[:500],
+        target_role=target_role,
+        overall_score=score_data["overall_score"],
+        grade=score_data["grade"],
+        score_breakdown=score_data["breakdown"],
+        recommendations=recommendations,
+        quick_tips=quick_tips,
+        role_analysis=role_analysis,
+        analyzed_at=now,
+        features=score_data["features"],
+    )
+    
+    db.add(resume_record)
+    await db.commit()
+    await db.refresh(resume_record)
+    
+    resume_id = resume_record.id
     logger.info(f"Persisted analysis {resume_id} for {filename}")
 
     # 8. Delete temp file
     filepath.unlink(missing_ok=True)
 
-    return {**record, "resume_id": resume_id}
+    return {
+        "resume_id": resume_id,
+        "filename": filename,
+        "target_role": target_role,
+        "overall_score": score_data["overall_score"],
+        "grade": score_data["grade"],
+        "score_breakdown": score_data["breakdown"],
+        "recommendations": recommendations,
+        "quick_tips": quick_tips,
+        "role_analysis": role_analysis,
+        "analyzed_at": now,
+    }
 
 
 @app.get("/api/analysis/{resume_id}", tags=["Analysis"])
-async def get_analysis(resume_id: str):
+async def get_analysis(resume_id: int, db: AsyncSession = Depends(get_db)):
     """Fetch a single saved analysis by its ID."""
-    try:
-        oid = ObjectId(resume_id)
-    except InvalidId:
-        raise HTTPException(400, f"'{resume_id}' is not a valid analysis ID.")
-
-    doc = await app.mongodb.resumes.find_one({"_id": oid})
-    if not doc:
+    result = await db.execute(select(Resume).where(Resume.id == resume_id))
+    resume = result.scalar_one_or_none()
+    
+    if not resume:
         raise HTTPException(404, "Analysis not found.")
-    return _serialize(doc)
+    
+    return {
+        "resume_id": resume.id,
+        "filename": resume.filename,
+        "target_role": resume.target_role,
+        "overall_score": resume.overall_score,
+        "grade": resume.grade,
+        "score_breakdown": resume.score_breakdown,
+        "recommendations": resume.recommendations,
+        "quick_tips": resume.quick_tips,
+        "role_analysis": resume.role_analysis,
+        "analyzed_at": resume.analyzed_at,
+    }
 
 
 @app.delete("/api/analysis/{resume_id}", tags=["Analysis"])
-async def delete_analysis(resume_id: str):
+async def delete_analysis(resume_id: int, db: AsyncSession = Depends(get_db)):
     """Delete a saved analysis by ID."""
-    try:
-        oid = ObjectId(resume_id)
-    except InvalidId:
-        raise HTTPException(400, f"'{resume_id}' is not a valid analysis ID.")
-
-    result = await app.mongodb.resumes.delete_one({"_id": oid})
-    if result.deleted_count == 0:
+    result = await db.execute(select(Resume).where(Resume.id == resume_id))
+    resume = result.scalar_one_or_none()
+    
+    if not resume:
         raise HTTPException(404, "Analysis not found.")
+    
+    await db.delete(resume)
+    await db.commit()
+    
     return {"deleted": resume_id}
 
 
 @app.get("/api/history", tags=["Analysis"])
-async def get_history(limit: int = 10, skip: int = 0):
+async def get_history(
+    limit: int = 10, 
+    skip: int = 0,
+    db: AsyncSession = Depends(get_db)
+):
     """
     Paginated history of all analyses, newest first.
     - limit: results per page (max 50)
     - skip:  offset for pagination
     """
-    limit  = min(limit, 50)
-    cursor = (
-        app.mongodb.resumes
-        .find({}, {"resume_text_preview": 0, "features": 0})   # exclude heavy fields
-        .sort("analyzed_at", -1)
-        .skip(skip)
+    limit = min(limit, 50)
+    
+    # Get total count
+    count_result = await db.execute(select(func.count(Resume.id)))
+    total = count_result.scalar()
+    
+    # Get paginated results
+    result = await db.execute(
+        select(Resume)
+        .order_by(desc(Resume.analyzed_at))
+        .offset(skip)
         .limit(limit)
     )
-    docs  = await cursor.to_list(length=limit)
-    total = await app.mongodb.resumes.count_documents({})
-    return {"total": total, "skip": skip, "limit": limit, "analyses": [_serialize(d) for d in docs]}
+    resumes = result.scalars().all()
+    
+    analyses = [
+        {
+            "resume_id": r.id,
+            "filename": r.filename,
+            "target_role": r.target_role,
+            "overall_score": r.overall_score,
+            "grade": r.grade,
+            "analyzed_at": r.analyzed_at,
+        }
+        for r in resumes
+    ]
+    
+    return {"total": total, "skip": skip, "limit": limit, "analyses": analyses}
 
 
 @app.get("/api/stats", tags=["Stats"])
-async def get_statistics():
+async def get_statistics(db: AsyncSession = Depends(get_db)):
     """Aggregated platform statistics."""
-    total = await app.mongodb.resumes.count_documents({})
-
-    score_pipeline = [{"$group": {
-        "_id":         None,
-        "avg_overall": {"$avg": "$overall_score"},
-        "avg_ats":     {"$avg": "$score_breakdown.ats_compatibility"},
-        "avg_content": {"$avg": "$score_breakdown.content_quality"},
-        "avg_keywords":{"$avg": "$score_breakdown.keyword_optimization"},
-        "max_score":   {"$max": "$overall_score"},
-        "min_score":   {"$min": "$overall_score"},
-    }}]
-    score_agg = await app.mongodb.resumes.aggregate(score_pipeline).to_list(1)
-
-    role_pipeline = [
-        {"$match": {"target_role": {"$ne": None}}},
-        {"$group": {"_id": "$target_role", "count": {"$sum": 1}}},
-        {"$sort": {"count": -1}},
-    ]
-    role_dist = await app.mongodb.resumes.aggregate(role_pipeline).to_list(20)
-
-    grade_pipeline = [
-        {"$group": {"_id": "$grade", "count": {"$sum": 1}}},
-        {"$sort": {"_id": 1}},
-    ]
-    grade_dist = await app.mongodb.resumes.aggregate(grade_pipeline).to_list(10)
-
+    
+    # Total analyses
+    count_result = await db.execute(select(func.count(Resume.id)))
+    total = count_result.scalar()
+    
+    # Score statistics
+    stats_result = await db.execute(
+        select(
+            func.avg(Resume.overall_score).label("avg_overall"),
+            func.max(Resume.overall_score).label("max_score"),
+            func.min(Resume.overall_score).label("min_score"),
+        )
+    )
+    stats = stats_result.one()
+    
+    # Role distribution
+    role_result = await db.execute(
+        select(Resume.target_role, func.count(Resume.id).label("count"))
+        .where(Resume.target_role.isnot(None))
+        .group_by(Resume.target_role)
+        .order_by(desc("count"))
+    )
+    role_dist = [{"_id": row[0], "count": row[1]} for row in role_result.all()]
+    
+    # Grade distribution
+    grade_result = await db.execute(
+        select(Resume.grade, func.count(Resume.id).label("count"))
+        .group_by(Resume.grade)
+        .order_by(Resume.grade)
+    )
+    grade_dist = [{"_id": row[0], "count": row[1]} for row in grade_result.all()]
+    
     return {
-        "total_analyses":   total,
-        "score_stats":      score_agg[0] if score_agg else {},
-        "role_distribution":role_dist,
-        "grade_distribution":grade_dist,
+        "total_analyses": total,
+        "score_stats": {
+            "avg_overall": float(stats[0]) if stats[0] else 0,
+            "max_score": stats[1] or 0,
+            "min_score": stats[2] or 0,
+        },
+        "role_distribution": role_dist,
+        "grade_distribution": grade_dist,
     }
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# Success Stories Endpoints
+# ═══════════════════════════════════════════════════════════════════════════
+
+@app.post("/api/success-story", tags=["Success Stories"])
+async def submit_success_story(
+    story: SuccessStoryCreate,
+    db: AsyncSession = Depends(get_db)
+):
+    """Submit a success story from a user who got hired"""
+    try:
+        story_record = SuccessStory(
+            name=story.name,
+            job_title=story.job_title,
+            company=story.company,
+            story=story.story,
+            score_before=story.score_before,
+            score_after=story.score_after,
+            submitted_at=datetime.utcnow(),
+            approved=False,
+            featured=False
+        )
+        
+        db.add(story_record)
+        await db.commit()
+        await db.refresh(story_record)
+        
+        logger.info(f"Success story submitted: {story.name} - {story.job_title}")
+        
+        return {
+            "message": "Thank you for sharing your success! We'll review and feature your story soon.",
+            "story_id": story_record.id
+        }
+        
+    except Exception as e:
+        logger.error(f"Error submitting success story: {e}")
+        raise HTTPException(status_code=500, detail="Failed to submit success story")
+
+
+@app.get("/api/success-stories", tags=["Success Stories"])
+async def get_success_stories(
+    limit: int = 10,
+    featured_only: bool = False,
+    db: AsyncSession = Depends(get_db)
+):
+    """Get approved success stories to display on the homepage"""
+    try:
+        query = select(SuccessStory).where(SuccessStory.approved == True)
+        
+        if featured_only:
+            query = query.where(SuccessStory.featured == True)
+        
+        query = query.order_by(desc(SuccessStory.submitted_at)).limit(limit)
+        
+        result = await db.execute(query)
+        stories = result.scalars().all()
+        
+        formatted_stories = [
+            {
+                "id": s.id,
+                "name": s.name,
+                "jobTitle": s.job_title,
+                "company": s.company,
+                "story": s.story,
+                "scoreBefore": s.score_before,
+                "scoreAfter": s.score_after,
+                "submittedAt": s.submitted_at.isoformat()
+            }
+            for s in stories
+        ]
+        
+        return {"stories": formatted_stories, "total": len(formatted_stories)}
+        
+    except Exception as e:
+        logger.error(f"Error fetching success stories: {e}")
+        raise HTTPException(status_code=500, detail="Failed to fetch success stories")
+
+
+@app.patch("/api/admin/success-story/{story_id}/approve", tags=["Admin"])
+async def approve_success_story(
+    story_id: int,
+    featured: bool = False,
+    db: AsyncSession = Depends(get_db)
+):
+    """ADMIN ONLY: Approve a success story for display"""
+    try:
+        result = await db.execute(select(SuccessStory).where(SuccessStory.id == story_id))
+        story = result.scalar_one_or_none()
+        
+        if not story:
+            raise HTTPException(status_code=404, detail="Story not found")
+        
+        story.approved = True
+        story.featured = featured
+        story.approved_at = datetime.utcnow()
+        
+        await db.commit()
+        
+        return {"message": "Success story approved", "featured": featured}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error approving success story: {e}")
+        raise HTTPException(status_code=500, detail="Failed to approve success story")
+
+
+@app.get("/api/admin/success-stories/pending", tags=["Admin"])
+async def get_pending_success_stories(db: AsyncSession = Depends(get_db)):
+    """ADMIN ONLY: Get all pending (unapproved) success stories"""
+    try:
+        result = await db.execute(
+            select(SuccessStory)
+            .where(SuccessStory.approved == False)
+            .order_by(desc(SuccessStory.submitted_at))
+        )
+        stories = result.scalars().all()
+        
+        formatted_stories = [
+            {
+                "id": s.id,
+                "name": s.name,
+                "jobTitle": s.job_title,
+                "company": s.company,
+                "story": s.story,
+                "scoreBefore": s.score_before,
+                "scoreAfter": s.score_after,
+                "submittedAt": s.submitted_at.isoformat()
+            }
+            for s in stories
+        ]
+        
+        return {"pending": formatted_stories, "total": len(formatted_stories)}
+        
+    except Exception as e:
+        logger.error(f"Error fetching pending stories: {e}")
+        raise HTTPException(status_code=500, detail="Failed to fetch pending stories")
 
 
 # ── Global error handlers ──────────────────────────────────────────────────
 
 @app.exception_handler(HTTPException)
 async def http_exc_handler(request: Request, exc: HTTPException):
-    return JSONResponse(exc.status_code, {"error": exc.detail})
+    return JSONResponse(status_code=exc.status_code, content={"error": exc.detail})
 
 @app.exception_handler(Exception)
 async def unhandled_exc_handler(request: Request, exc: Exception):
     logger.exception(f"Unhandled error on {request.url}: {exc}")
-    return JSONResponse(500, {"error": "Internal server error."})
+    return JSONResponse(status_code=500, content={"error": "Internal server error."})
 
 
 # ── Dev entrypoint ─────────────────────────────────────────────────────────
