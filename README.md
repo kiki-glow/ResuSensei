@@ -30,8 +30,9 @@ ResuSensei leverages AI to analyze resumes, providing insights, scores, and reco
 
 ## Tech Stack
 - **Frontend**: Vue.js, Tailwind CSS  
-- **Backend**: Flask, Python  
+- **Backend**: FatAPI, Python  
 - **Libraries**: Chart.js, Axios, FontAwesome  
+- **Database**: PostgreSQL
 
 ---
 
